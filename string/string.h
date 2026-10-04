@@ -1,24 +1,84 @@
 #pragma once
 
+/// \file string.h
+/// \brief Laengenbegrenzte Zeichenpuffer, Pfade und Verzeichnisse.
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+/// \brief Groesse eines string_t-Puffers in Bytes (einschliesslich Nullbyte).
 #define STRING_MAXLEN 4096
+
+/// \brief Rueckgabewert von string_copy/string_cat, wenn der Zielpuffer zu klein ist.
 #define STRING_ERROR -1
 
+/// \brief Fester Zeichenpuffer der Bibliothek — laengenbegrenzt, kein Heap.
 typedef char string_t[STRING_MAXLEN];
 
+/// \brief Kopiert source nach destination.
+/// \param destination Zielpuffer.
+/// \param destinantion_size_bytes Groesse des Zielpuffers in Bytes.
+/// \param source Quelltext (nullterminiert).
+/// \return 0 bei Erfolg; STRING_ERROR, wenn der Zielpuffer kleiner als strlen(source) ist (das Ziel
+///         bleibt dann unveraendert).
 int32_t string_copy(char* destination, size_t destinantion_size_bytes, const char* source);
+
+/// \brief Haengt source an destination an.
+/// \param destination Zielpuffer mit vorhandenem Inhalt.
+/// \param destinantion_size_bytes Groesse des Zielpuffers in Bytes.
+/// \param source anzuhangender Text.
+/// \return 0 bei Erfolg; STRING_ERROR, wenn strlen(destination) + strlen(source) nicht mehr in den
+///         Puffer passt (das Ziel bleibt dann unveraendert).
 int32_t string_cat(char* destination, size_t destinantion_size_bytes, const char* source);
+
+/// \brief Verzeichnisanteil eines Dateipfads (wie dirname).
+/// \param filepath Pfad — WIRD VERAENDERT.
+/// \return Zeiger INNERHALB von filepath auf den Verzeichnisanteil; der Pfad ist danach nicht mehr
+///         als Ganzes brauchbar.
 const char* string_dirname_from_filepath(char* filepath);
+
+/// \brief Pfad der laufenden Binaerdatei (/proc/self/exe).
+/// \param exe_path Zielpuffer.
+/// \param buffer_size Groesse des Zielpuffers in Bytes.
+/// \note Ist der Pfad nicht lesbar, steht danach "unknown" im Puffer.
 void string_get_exe_path(char* exe_path, size_t buffer_size);
+
+/// \brief Existiert der Pfad?
+/// \param directory Pfad.
+/// \return true, wenn stat gelingt — auch fuer DATEIEN, nicht nur Verzeichnisse.
 bool string_directory_exists(const char* directory);
+
+/// \brief Legt das Verzeichnis an (Modus 0700).
+/// \param directory Pfad.
+/// \note Ein bereits vorhandenes Verzeichnis ist kein Fehler.
 void string_directory_create(const char* directory);
+
+/// \brief Existiert der Pfad?
+/// \param filepath Pfad.
+/// \return true, wenn der Zugriff (access, F_OK) gelingt — Datei oder Verzeichnis.
 bool string_filepath_exist(char* filepath);
+
+/// \brief Haengt directory an path an ("path/directory") und legt das Ergebnis an, falls es fehlt.
+/// \param path Basispfad.
+/// \param directory anzuhangendes Verzeichnis.
+/// \return Zeiger auf einen STATISCHEN Puffer — beim naechsten Aufruf ueberschrieben.
 const char* string_append_directory_to_path_and_create(const char* path, const char* directory);
+
+/// \brief Erste Fundstelle von sub_string in string.
+/// \param string durchsuchter Text.
+/// \param sub_string gesuchter Text.
+/// \return Index der ersten Fundstelle, sonst -1.
 int32_t string_calculate_substring_index(const char* string, const char* sub_string);
+
+/// \brief Setzt die Textcursor-Position (ANSI).
+/// \param x Spalte (1-basiert).
+/// \param y Zeile (1-basiert).
+/// \note Nur fuer ein Terminal.
 void string_set_cursor_position(int x, int y);
+
+/// \brief Leert den Bildschirm und setzt den Cursor nach Hause (ANSI).
+/// \note Nur fuer ein Terminal.
 void string_clear_screen();
 
 /* ---------- Vordergrundfarben (Standard) ---------- */
@@ -64,13 +124,13 @@ void string_clear_screen();
 
 /* ---------- Textformatierungen ---------- */
 #define TEXT_BOLD     "\x1b[1m"
-#define TEXT_DIM      "\x1b[2m"     // Verblasst
-#define TEXT_ITALIC   "\x1b[3m"     // Kursiv (nicht überall unterstützt)
+#define TEXT_DIM      "\x1b[2m"     ///< Verblasst
+#define TEXT_ITALIC   "\x1b[3m"     ///< Kursiv (nicht überall unterstützt)
 #define TEXT_UNDER    "\x1b[4m"
-#define TEXT_BLINK    "\x1b[5m"     // Blinkend
-#define TEXT_REVERSE  "\x1b[7m"     // Vorder-/Hintergrund tauschen
-#define TEXT_HIDDEN   "\x1b[8m"     // Versteckt
-#define TEXT_STRIKE   "\x1b[9m"     // Durchgestrichen
+#define TEXT_BLINK    "\x1b[5m"     ///< Blinkend
+#define TEXT_REVERSE  "\x1b[7m"     ///< Vorder-/Hintergrund tauschen
+#define TEXT_HIDDEN   "\x1b[8m"     ///< Versteckt
+#define TEXT_STRIKE   "\x1b[9m"     ///< Durchgestrichen
 
 /* ---------- Cursor-Bewegung ---------- */
 #define CURSOR_UP(n)     "\x1b[" #n "A"
@@ -84,8 +144,8 @@ void string_clear_screen();
 /* ---------- Bildschirm löschen ---------- */
 #define CLEAR_SCREEN     "\x1b[2J"
 #define CLEAR_LINE       "\x1b[2K"
-#define CLEAR_TO_EOL     "\x1b[0K"   // Bis zum Zeilenende
-#define CLEAR_TO_BOL     "\x1b[1K"   // Bis zum Zeilenanfang
+#define CLEAR_TO_EOL     "\x1b[0K"   ///< Bis zum Zeilenende
+#define CLEAR_TO_BOL     "\x1b[1K"   ///< Bis zum Zeilenanfang
 
 /* ---------- 256-Farben-Modus ---------- */
 #define COLOR_256(n)     "\x1b[38;5;" #n "m"
@@ -99,7 +159,7 @@ void string_clear_screen();
    Hilfsmakros für kombinierte Formatierungen
    ============================================================ */
 
-// Kombinierte Farben + Formatierung
+/// Kombinierte Farben + Formatierung
 #define BOLD_RED        TEXT_BOLD COLOR_RED
 #define BOLD_GREEN      TEXT_BOLD COLOR_GREEN
 #define BOLD_YELLOW     TEXT_BOLD COLOR_YELLOW
@@ -108,7 +168,7 @@ void string_clear_screen();
 #define BOLD_CYAN       TEXT_BOLD COLOR_CYAN
 #define BOLD_WHITE      TEXT_BOLD COLOR_WHITE
 
-// Mit Hintergrund
+/// Mit Hintergrund
 #define RED_ON_WHITE    COLOR_RED BG_WHITE
 #define BLACK_ON_WHITE  COLOR_BLACK BG_WHITE
 #define BLUE_ON_WHITE   COLOR_BLUE BG_WHITE
